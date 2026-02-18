@@ -72,3 +72,28 @@ vgg16_config = UnlearnerConfig(
     lambda_retain=4.192257782041986,
     target_modules=vgg16_target_modules,
 )
+
+# ============================================================
+# Vitbase
+# ============================================================
+
+vit_base_target_modules = [
+    "blocks.10.attn.qkv",
+    "blocks.10.attn.proj",
+    "blocks.10.mlp.fc1",
+    "blocks.10.mlp.fc2",
+    "blocks.11.attn.qkv",
+    "blocks.11.attn.proj",
+    "blocks.11.mlp.fc1",
+    "blocks.11.mlp.fc2",
+    "head",
+]
+
+vit_base_config = UnlearnerConfig(
+    epochs=5,
+    lr=6.84941045972412e-05,
+    rank=37,
+    alpha=7,
+    lambda_retain=2.562392399161846,
+    target_modules=vit_base_target_modules,
+)
