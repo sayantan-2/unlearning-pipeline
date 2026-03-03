@@ -68,11 +68,14 @@ vgg16_target_modules = [
 ]
 
 vgg16_config = UnlearnerConfig(
-    epochs=5,
-    lr=0.0003104449791152426,
-    rank=47,
-    alpha=41,
+    epochs=8,
+    lr=0.000249097203632189,
+    rank=44,
+    alpha=30,
     lambda_retain=4.192257782041986,
+    lambda_hinge=0.20852382593222335,
+    lambda_kl=1.8264131111869117,
+    hinge_margin=6.376586775265366,
     target_modules=vgg16_target_modules,
 )
 
