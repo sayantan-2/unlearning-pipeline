@@ -23,7 +23,7 @@ resnet50_config = UnlearnerConfig(
     lr=0.0004918987182238827,
     rank=8,
     alpha=18,
-    lambda_retain=3.6500479489591697,
+    lambda_retain=3.6500479489591697, # ignored in hybrid loss
     lambda_hinge=0.16988108526106105,
     lambda_kl=4.264085465184694,
     hinge_margin=11.416722631389227,
@@ -45,11 +45,14 @@ mobilenetv2_target_modules = [
 ]
 
 mobilenetv2_config = UnlearnerConfig(
-    epochs=5,
-    lr=0.0004084053844586405,
-    rank=7,
-    alpha=38,
-    lambda_retain=3.701343149230949,
+    epochs=4,
+    lr=7.052035615510206e-05,
+    rank=6,
+    alpha=62,
+    lambda_retain=3.701343149230949,  # ignored in hybrid loss
+    lambda_hinge=0.2648703496536423,
+    lambda_kl=2.8334471725403962,
+    hinge_margin=4.302183805870119,
     target_modules=mobilenetv2_target_modules,
 )
 
@@ -72,7 +75,7 @@ vgg16_config = UnlearnerConfig(
     lr=0.000249097203632189,
     rank=44,
     alpha=30,
-    lambda_retain=4.192257782041986,
+    lambda_retain=4.192257782041986,  # ignored in hybrid loss
     lambda_hinge=0.20852382593222335,
     lambda_kl=1.8264131111869117,
     hinge_margin=6.376586775265366,
@@ -97,9 +100,12 @@ vit_base_target_modules = [
 
 vit_base_config = UnlearnerConfig(
     epochs=5,
-    lr=6.84941045972412e-05,
-    rank=37,
-    alpha=7,
+    lr=0.00020393008397274448,
+    rank=44,
+    alpha=58,
     lambda_retain=2.562392399161846,
+    lambda_hinge=0.18471198075745468,
+    lambda_kl=4.425844167006444,
+    hinge_margin=14.67091175609041,
     target_modules=vit_base_target_modules,
 )
