@@ -36,7 +36,6 @@ from torch.utils.data import DataLoader
 
 from pipeline.unlearning.adapters.lora_adapter import LoraModelAdapter
 from pipeline.unlearning.config import UnlearnerConfig
-from pipeline.unlearning.losses.unlearning_loss import combined_loss
 from pipeline.unlearning.utils.logging import UnlearningLogger
 
 logger = logging.getLogger(__name__)
@@ -81,7 +80,7 @@ class Unlearner:
         self.forget_loader = forget_loader
         self.retain_loader = retain_loader
         self.device = torch.device(self.config.device)
-
+        self._teacher = None
         self._run_logger = UnlearningLogger(self.config)
         self._model = self._build_model(model)
         self._optimizer = self._build_optimizer()
@@ -104,8 +103,11 @@ class Unlearner:
 
             logger.info(
                 "Epoch %d/%d | avg_forget_prob=%.6f (target<%.4f) | loss=%.4f",
-                epoch, self.config.epochs,
-                avg_forget_prob, self.config.forget_threshold, avg_loss,
+                epoch,
+                self.config.epochs,
+                avg_forget_prob,
+                self.config.forget_threshold,
+                avg_loss,
             )
             print(
                 f"Epoch {epoch}/{self.config.epochs} | "
@@ -117,7 +119,8 @@ class Unlearner:
             if avg_forget_prob < self.config.early_stop_prob:
                 logger.info(
                     "Early stopping: forget_prob %.6f < %.4f",
-                    avg_forget_prob, self.config.early_stop_prob,
+                    avg_forget_prob,
+                    self.config.early_stop_prob,
                 )
                 print("✅ Target unlearning threshold reached. Stopping early.")
                 break
@@ -133,23 +136,44 @@ class Unlearner:
         f_labels: torch.Tensor,
         r_images: torch.Tensor,
         r_labels: torch.Tensor,
-    ) -> tuple[float, float]:
-        """
-        One gradient update.  Override to swap in a different algorithm.
+    ):
 
-        Returns
-        -------
-        (loss_scalar, batch_forget_prob)
-        """
         f_logits = self._model(f_images)
         r_logits = self._model(r_images)
 
-        loss, batch_forget_prob = combined_loss(
-            f_logits, f_labels,
-            r_logits, r_labels,
-            self.config.lambda_retain,
-            self.config.forget_threshold,
-        )
+        if self.config.loss_type == "gradient_ascent":
+
+            from pipeline.unlearning.losses.unlearning_loss import gradient_ascent_loss
+
+            loss, batch_forget_prob = gradient_ascent_loss(
+                f_logits,
+                f_labels,
+                r_logits,
+                r_labels,
+                self.config.lambda_retain,
+            )
+
+        elif self.config.loss_type == "hybrid":
+
+            from pipeline.unlearning.losses.unlearning_loss import hybrid_loss
+
+            with torch.no_grad():
+                teacher_r_logits = self._teacher(r_images)
+
+            loss, batch_forget_prob = hybrid_loss(
+                f_logits,
+                f_labels,
+                r_logits,
+                r_labels,
+                teacher_r_logits,
+                forget_class=f_labels[0].item(),  # assume batch same class
+                lambda_hinge=self.config.lambda_hinge,
+                lambda_kl=self.config.lambda_kl,
+                hinge_margin=self.config.hinge_margin,
+            )
+
+        else:
+            raise ValueError(f"Unknown loss_type: {self.config.loss_type}")
 
         self._optimizer.zero_grad()
         loss.backward()
@@ -159,9 +183,7 @@ class Unlearner:
 
     # ── Private helpers ───────────────────────────────────────────────────────
 
-    def _run_epoch(
-        self, forget_iter, global_step: int
-    ) -> tuple[float, float]:
+    def _run_epoch(self, forget_iter, global_step: int) -> tuple[float, float]:
         total_loss = total_forget_prob = 0.0
         n = len(self.retain_loader)
 
@@ -195,7 +217,14 @@ class Unlearner:
 
     def _build_model(self, raw_model: nn.Module) -> nn.Module:
         logger.info("Cloning model and injecting LoRA…")
+
         cloned = copy.deepcopy(raw_model)
+
+        # Teacher = frozen base model
+        self._teacher = copy.deepcopy(raw_model).to(self.device).eval()
+        for p in self._teacher.parameters():
+            p.requires_grad = False
+
         adapted = LoraModelAdapter(cloned, self.config).inject()
         return adapted.to(self.device)
 

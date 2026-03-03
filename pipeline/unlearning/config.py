@@ -29,6 +29,14 @@ class UnlearnerConfig:
     lr: float = 3e-4
     weight_decay: float = 0.01
 
+    # ── Loss type ────────────────────────────────────────────────
+    loss_type: str = "hybrid"  # "hybrid" or "gradient_ascent"
+
+    # ── Hybrid loss weights ───────────────────────────────────────
+    lambda_hinge: float = 1.0
+    lambda_kl: float = 1.0
+    hinge_margin: float = 10.0
+
     # ── Loss ──────────────────────────────────────────────────────────────────
     lambda_retain: float = 1.0
     # Per-batch threshold: skip gradient ascent if forget prob already below this.

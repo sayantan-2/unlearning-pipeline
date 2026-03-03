@@ -19,11 +19,14 @@ resnet50_target_modules = [
 ]
 
 resnet50_config = UnlearnerConfig(
-    epochs=5,
-    lr=0.00019770545752611148,
-    rank=4,
-    alpha=54,
+    epochs=3,
+    lr=0.0004918987182238827,
+    rank=8,
+    alpha=18,
     lambda_retain=3.6500479489591697,
+    lambda_hinge=0.16988108526106105,
+    lambda_kl=4.264085465184694,
+    hinge_margin=11.416722631389227,
     target_modules=resnet50_target_modules,
 )
 
